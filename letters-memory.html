@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حفظ الحروف - مساعد التعلم</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <button class="back-btn" onclick="window.location.href='index.html'">← العودة</button>
+            <div class="progress">الجولة <span id="round">1</span> من 50</div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="game-content" id="game-screen">
+            <div class="letter-display" id="letter"></div>
+            <div class="answer-buttons">
+                <button class="btn-correct" onclick="answer(true)">صحيح ✓</button>
+                <button class="btn-wrong" onclick="answer(false)">خطأ ✗</button>
+            </div>
+            <div class="word-display" id="word"></div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div class="completion-content" id="completion-screen" style="display: none;">
+            <div class="completion-emoji">🎉</div>
+            <h2>أحسنت!</h2>
+            <p class="score">النتيجة: <span id="final-score"></span> من 50</p>
+            <button class="btn-primary" onclick="restart()">إعادة اللعبة</button>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        // Arabic letters from أ to ف with emojis
+        const arabicLetters = [
+            { letter: 'أ', words: [{text: 'أسد', emoji: '🦁'}, {text: 'أرنب', emoji: '🐰'}, {text: 'أنف', emoji: '👃'}] },
+            { letter: 'ب', words: [{text: 'بطة', emoji: '🦆'}, {text: 'بيت', emoji: '🏠'}, {text: 'باب', emoji: '🚪'}] },
+            { letter: 'ت', words: [{text: 'تفاح', emoji: '🍎'}, {text: 'تمر', emoji: '🌴'}, {text: 'تاج', emoji: '👑'}] },
+            { letter: 'ث', words: [{text: 'ثعلب', emoji: '🦊'}, {text: 'ثوب', emoji: '👗'}, {text: 'ثلج', emoji: '❄️'}] },
+            { letter: 'ج', words: [{text: 'جمل', emoji: '🐫'}, {text: 'جبل', emoji: '⛰️'}, {text: 'جزر', emoji: '🥕'}] },
+            { letter: 'ح', words: [{text: 'حصان', emoji: '🐴'}, {text: 'حوت', emoji: '🐋'}, {text: 'حليب', emoji: '🥛'}] },
+            { letter: 'خ', words: [{text: 'خروف', emoji: '🐑'}, {text: 'خبز', emoji: '🍞'}, {text: 'خيار', emoji: '🥒'}] },
+            { letter: 'د', words: [{text: 'دجاجة', emoji: '🐔'}, {text: 'دب', emoji: '🐻'}, {text: 'درج', emoji: '🪜'}] },
+            { letter: 'ذ', words: [{text: 'ذئب', emoji: '🐺'}, {text: 'ذرة', emoji: '🌽'}, {text: 'ذهب', emoji: '✨'}] },
+            { letter: 'ر', words: [{text: 'رمان', emoji: '🍒'}, {text: 'رز', emoji: '🍚'}, {text: 'ريش', emoji: '🪶'}] },
+            { letter: 'ز', words: [{text: 'زرافة', emoji: '🦒'}, {text: 'زيت', emoji: '🫒'}, {text: 'زهرة', emoji: '🌸'}] },
+            { letter: 'س', words: [{text: 'سمك', emoji: '🐟'}, {text: 'سيارة', emoji: '🚗'}, {text: 'سكر', emoji: '🍬'}] },
+            { letter: 'ش', words: [{text: 'شمس', emoji: '☀️'}, {text: 'شجرة', emoji: '🌳'}, {text: 'شباك', emoji: '🪟'}] },
+            { letter: 'ص', words: [{text: 'صقر', emoji: '🦅'}, {text: 'صابون', emoji: '🧼'}, {text: 'صخرة', emoji: '🪨'}] },
+            { letter: 'ض', words: [{text: 'ضفدع', emoji: '🐸'}, {text: 'ضوء', emoji: '💡'}, {text: 'ضرس', emoji: '🦷'}] },
+            { letter: 'ط', words: [{text: 'طائر', emoji: '🐦'}, {text: 'طاولة', emoji: '🪑'}, {text: 'طماطم', emoji: '🍅'}] },
+            { letter: 'ظ', words: [{text: 'ظرف', emoji: '✉️'}, {text: 'ظل', emoji: '🌑'}, {text: 'ظفر', emoji: '💅'}] },
+            { letter: 'ع', words: [{text: 'عصفور', emoji: '🐦'}, {text: 'عنب', emoji: '🍇'}, {text: 'عين', emoji: '👁️'}] },
+            { letter: 'غ', words: [{text: 'غراب', emoji: '🐦‍⬛'}, {text: 'غزال', emoji: '🦌'}, {text: 'غيمة', emoji: '☁️'}] },
+            { letter: 'ف', words: [{text: 'فراشة', emoji: '🦋'}, {text: 'فيل', emoji: '🐘'}, {text: 'فم', emoji: '👄'}] }
+        ];
+
+        let currentRound = 0;
+        let correctAnswers = 0;
+        let currentLetter = null;
+        let lastValue = null;
+
+        function getRandomLetter(exclude) {
+            let letter;
+            do {
+                letter = arabicLetters[getRandomInt(0, arabicLetters.length - 1)];
+            } while (exclude && letter.letter === exclude.letter);
+            return letter;
+        }
+
+        function nextRound() {
+            if (currentRound >= 50) {
+                showCompletion();
+                return;
+            }
+
+            currentRound++;
+            document.getElementById('round').textContent = currentRound;
+            updateProgressBar('progress', currentRound, 50);
+
+            currentLetter = getRandomLetter(lastValue);
+            lastValue = currentLetter;
+
+            document.getElementById('letter').textContent = currentLetter.letter;
+            document.getElementById('word').textContent = '';
+        }
+
+        function answer(isCorrect) {
+            if (isCorrect) {
+                correctAnswers++;
+            }
+
+            // Show emoji and word
+            const randomWord = currentLetter.words[getRandomInt(0, currentLetter.words.length - 1)];
+
+            document.getElementById('word').textContent = randomWord.emoji + ' ' + randomWord.text;
+
+            // Hide answer buttons temporarily
+            const buttons = document.querySelector('.answer-buttons');
+            buttons.style.visibility = 'hidden';
+
+            // Next question after delay
+            setTimeout(() => {
+                buttons.style.visibility = 'visible';
+                nextRound();
+            }, 1000);
+        }
+
+        function showCompletion() {
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('completion-screen').style.display = 'block';
+            document.getElementById('final-score').textContent = correctAnswers;
+        }
+
+        function restart() {
+            currentRound = 0;
+            correctAnswers = 0;
+            currentLetter = null;
+            lastValue = null;
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('completion-screen').style.display = 'none';
+            nextRound();
+        }
+
+        // Start the game
+        nextRound();
+    </script>
+</body>
+</html>

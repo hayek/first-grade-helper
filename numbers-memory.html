@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حفظ الأرقام - مساعد التعلم</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <button class="back-btn" onclick="window.location.href='index.html'">← العودة</button>
+            <div class="progress">الجولة <span id="round">1</span> من 50</div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="game-content" id="game-screen">
+            <div class="number-display" id="number"></div>
+            <div class="answer-buttons">
+                <button class="btn-correct" onclick="answer(true)">صحيح ✓</button>
+                <button class="btn-wrong" onclick="answer(false)">خطأ ✗</button>
+            </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div class="completion-content" id="completion-screen" style="display: none;">
+            <div class="completion-emoji">🎉</div>
+            <h2>أحسنت!</h2>
+            <p class="score">النتيجة: <span id="final-score"></span> من 50</p>
+            <button class="btn-primary" onclick="restart()">إعادة اللعبة</button>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let currentRound = 0;
+        let correctAnswers = 0;
+        let lastValue = null;
+
+        function nextRound() {
+            if (currentRound >= 50) {
+                showCompletion();
+                return;
+            }
+
+            currentRound++;
+            document.getElementById('round').textContent = currentRound;
+            updateProgressBar('progress', currentRound, 50);
+
+            const number = getRandomExcluding(0, 10, lastValue);
+            lastValue = number;
+
+            document.getElementById('number').textContent = number;
+        }
+
+        function answer(isCorrect) {
+            if (isCorrect) {
+                correctAnswers++;
+            }
+            nextRound();
+        }
+
+        function showCompletion() {
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('completion-screen').style.display = 'block';
+            document.getElementById('final-score').textContent = correctAnswers;
+        }
+
+        function restart() {
+            currentRound = 0;
+            correctAnswers = 0;
+            lastValue = null;
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('completion-screen').style.display = 'none';
+            nextRound();
+        }
+
+        // Start the game
+        nextRound();
+    </script>
+</body>
+</html>

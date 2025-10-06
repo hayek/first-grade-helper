@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قبل وبعد - مساعد التعلم</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <button class="back-btn" onclick="window.location.href='index.html'">← العودة</button>
+            <div class="progress">الجولة <span id="round">1</span> من 50</div>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="game-content" id="game-screen">
+            <div class="question-display" id="question"></div>
+            <div class="options-grid" id="options"></div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div class="completion-content" id="completion-screen" style="display: none;">
+            <div class="completion-emoji">🎉</div>
+            <h2>أحسنت!</h2>
+            <p class="score">النتيجة: <span id="final-score"></span> من 50</p>
+            <button class="btn-primary" onclick="restart()">إعادة اللعبة</button>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let currentRound = 0;
+        let correctAnswers = 0;
+        let currentQuestion = null;
+
+        function nextRound() {
+            if (currentRound >= 50) {
+                showCompletion();
+                return;
+            }
+
+            currentRound++;
+            document.getElementById('round').textContent = currentRound;
+            updateProgressBar('progress', currentRound, 50);
+
+            // Generate new question different from last one
+            let newQuestion;
+            do {
+                const num = getRandomInt(0, 10);
+                const isBefore = Math.random() > 0.5;
+                newQuestion = { num, isBefore };
+            } while (currentQuestion &&
+                     currentQuestion.num === newQuestion.num &&
+                     currentQuestion.isBefore === newQuestion.isBefore);
+
+            currentQuestion = newQuestion;
+
+            // Display question (left-to-right order in HTML, but displays RTL)
+            const questionEl = document.getElementById('question');
+            if (currentQuestion.isBefore) {
+                // Blank before number in LTR = [_, 3] answer: 2
+                questionEl.innerHTML = '<div>' + currentQuestion.num + '</div><div class="blank"></div>';
+            } else {
+                // Number before blank in LTR = [6, _] answer: 7
+                questionEl.innerHTML = '<div class="blank"></div><div>' + currentQuestion.num + '</div>';
+            }
+
+            // Generate options - ensure all are within 0-10 range
+            const correctAnswer = currentQuestion.isBefore ? currentQuestion.num - 1 : currentQuestion.num + 1;
+
+            // Only add correct answer if it's within valid range (0-10)
+            const options = new Set();
+            if (correctAnswer >= 0 && correctAnswer <= 10) {
+                options.add(correctAnswer);
+            }
+
+            // Add 3 random wrong answers within 0-10 range
+            while (options.size < 4) {
+                const option = getRandomInt(0, 10);
+                if (option !== currentQuestion.num && (correctAnswer < 0 || correctAnswer > 10 || option !== correctAnswer)) {
+                    options.add(option);
+                }
+            }
+
+            // Shuffle and display options
+            const optionsArray = Array.from(options).sort(() => Math.random() - 0.5);
+            const optionsEl = document.getElementById('options');
+            optionsEl.innerHTML = '';
+
+            optionsArray.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.onclick = () => selectOption(option, correctAnswer, btn);
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        function selectOption(selected, correct, btn) {
+            const isCorrect = selected === correct;
+
+            if (isCorrect) {
+                correctAnswers++;
+                btn.classList.add('correct');
+            } else {
+                btn.classList.add('wrong');
+                // Highlight correct answer
+                document.querySelectorAll('.option-btn').forEach(b => {
+                    if (parseInt(b.textContent) === correct) {
+                        b.classList.add('correct');
+                    }
+                });
+            }
+
+            // Disable all buttons
+            document.querySelectorAll('.option-btn').forEach(b => {
+                b.disabled = true;
+            });
+
+            // Next question after delay
+            setTimeout(() => {
+                nextRound();
+            }, 1000);
+        }
+
+        function showCompletion() {
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('completion-screen').style.display = 'block';
+            document.getElementById('final-score').textContent = correctAnswers;
+        }
+
+        function restart() {
+            currentRound = 0;
+            correctAnswers = 0;
+            currentQuestion = null;
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('completion-screen').style.display = 'none';
+            nextRound();
+        }
+
+        // Start the game
+        nextRound();
+    </script>
+</body>
+</html>

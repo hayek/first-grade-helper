@@ -48,8 +48,10 @@
             // Generate new question different from last one
             let newQuestion;
             do {
-                const num = getRandomInt(0, 10);
                 const isBefore = Math.random() > 0.5;
+                // If before: number must be 1-10 (answer 0-9)
+                // If after: number must be 0-9 (answer 1-10)
+                const num = isBefore ? getRandomInt(1, 10) : getRandomInt(0, 9);
                 newQuestion = { num, isBefore };
             } while (currentQuestion &&
                      currentQuestion.num === newQuestion.num &&

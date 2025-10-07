@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ترتيب الأرقام - مساعد التعلم</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .game-area {
+            padding: 40px 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .draggable-area {
+            min-height: 200px;
+            margin-bottom: 60px;
+            position: relative;
+            padding: 20px;
+        }
+
+        .draggable-number {
+            position: absolute;
+            cursor: move;
+            touch-action: none;
+            user-select: none;
+            text-align: center;
+        }
+
+        .draggable-number .emoji {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .draggable-number .number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            background: white;
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .draggable-number.dragging {
+            opacity: 0.5;
+            z-index: 1000;
+        }
+
+        .number-line {
+            position: relative;
+            height: 120px;
+            margin: 40px auto;
+            max-width: 800px;
+        }
+
+        .axis {
+            position: absolute;
+            bottom: 40px;
+            left: 50px;
+            right: 50px;
+            height: 3px;
+            background: #333;
+        }
+
+        .axis::before,
+        .axis::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .axis::after {
+            right: -10px;
+            top: -6px;
+            border-width: 6px 0 6px 10px;
+            border-color: transparent transparent transparent #333;
+        }
+
+        .tick-container {
+            position: absolute;
+            bottom: 40px;
+            left: 50px;
+            right: 50px;
+            height: 60px;
+        }
+
+        .tick {
+            position: absolute;
+            bottom: 0;
+            width: 3px;
+            height: 15px;
+            background: #333;
+            transform: translateX(-50%);
+        }
+
+        .tick-label {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .drop-zone {
+            position: absolute;
+            bottom: 20px;
+            width: 60px;
+            height: 60px;
+            transform: translateX(-50%);
+            border: 3px dashed var(--primary-color);
+            border-radius: 15px;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .drop-zone.filled {
+            border: 3px solid var(--primary-color);
+            background: rgba(76, 175, 80, 0.3);
+        }
+
+        .drop-zone.correct {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.3);
+            animation: correctPulse 0.5s ease;
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+        }
+
+        .placed-number {
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            background: var(--primary-color);
+            border-radius: 15px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <button class="back-btn" onclick="window.location.href='index.html'">← العودة</button>
+            <div class="progress">النتيجة: <span id="score">0</span> من 5</div>
+        </div>
+
+        <div class="game-area">
+            <div class="draggable-area" id="draggable-area"></div>
+
+            <div class="number-line">
+                <div class="tick-container" id="tick-container"></div>
+                <div class="axis"></div>
+            </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div class="completion-content" id="completion-screen" style="display: none;">
+            <div class="completion-emoji">🎉</div>
+            <h2>ممتاز!</h2>
+            <p class="score">أكملت جميع الأرقام بنجاح!</p>
+            <button class="btn-primary" onclick="restart()">إعادة اللعبة</button>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let missingNumbers = [];
+        let correctPlacements = 0;
+        const totalNumbers = 5;
+        let draggedElement = null;
+        let offsetX, offsetY;
+
+        function initGame() {
+            // Select 5 random numbers from 1-10 to be missing
+            const numbers = Array.from({length: 10}, (_, i) => i + 1);
+            missingNumbers = [];
+            while (missingNumbers.length < totalNumbers) {
+                const randomIndex = Math.floor(Math.random() * numbers.length);
+                missingNumbers.push(numbers[randomIndex]);
+                numbers.splice(randomIndex, 1);
+            }
+
+            setupNumberLine();
+            setupDraggableNumbers();
+        }
+
+        function setupNumberLine() {
+            const tickContainer = document.getElementById('tick-container');
+            tickContainer.innerHTML = '';
+
+            for (let i = 1; i <= 10; i++) {
+                const tick = document.createElement('div');
+                tick.className = 'tick';
+                const position = ((i - 1) / 9) * 100;
+                tick.style.left = position + '%';
+                tickContainer.appendChild(tick);
+
+                // Add label for shown numbers
+                if (!missingNumbers.includes(i)) {
+                    const label = document.createElement('div');
+                    label.className = 'tick-label';
+                    label.textContent = i;
+                    label.style.left = position + '%';
+                    tickContainer.appendChild(label);
+                } else {
+                    // Add drop zone for missing numbers
+                    const dropZone = document.createElement('div');
+                    dropZone.className = 'drop-zone';
+                    dropZone.dataset.number = i;
+                    dropZone.style.left = position + '%';
+                    tickContainer.appendChild(dropZone);
+                }
+            }
+        }
+
+        function setupDraggableNumbers() {
+            const draggableArea = document.getElementById('draggable-area');
+            draggableArea.innerHTML = '';
+
+            missingNumbers.forEach((num, index) => {
+                const container = document.createElement('div');
+                container.className = 'draggable-number';
+                container.dataset.number = num;
+
+                // Random position in the draggable area
+                const maxX = draggableArea.offsetWidth - 80;
+                const maxY = draggableArea.offsetHeight - 100;
+                const randomX = Math.random() * maxX;
+                const randomY = Math.random() * maxY;
+
+                container.style.left = randomX + 'px';
+                container.style.top = randomY + 'px';
+
+                container.innerHTML = `
+                    <div class="emoji">🎩</div>
+                    <div class="number">${num}</div>
+                `;
+
+                // Add drag event listeners
+                container.addEventListener('mousedown', startDrag);
+                container.addEventListener('touchstart', startDrag);
+
+                draggableArea.appendChild(container);
+            });
+        }
+
+        function startDrag(e) {
+            draggedElement = e.currentTarget;
+            draggedElement.classList.add('dragging');
+
+            const touch = e.type === 'touchstart' ? e.touches[0] : e;
+            const rect = draggedElement.getBoundingClientRect();
+            offsetX = touch.clientX - rect.left;
+            offsetY = touch.clientY - rect.top;
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchend', stopDrag);
+
+            e.preventDefault();
+        }
+
+        function drag(e) {
+            if (!draggedElement) return;
+
+            const touch = e.type === 'touchmove' ? e.touches[0] : e;
+            const draggableArea = document.getElementById('draggable-area');
+            const rect = draggableArea.getBoundingClientRect();
+
+            let x = touch.clientX - rect.left - offsetX;
+            let y = touch.clientY - rect.top - offsetY;
+
+            // Keep within bounds
+            x = Math.max(0, Math.min(x, draggableArea.offsetWidth - 80));
+            y = Math.max(0, Math.min(y, draggableArea.offsetHeight - 100));
+
+            draggedElement.style.left = x + 'px';
+            draggedElement.style.top = y + 'px';
+
+            e.preventDefault();
+        }
+
+        function stopDrag(e) {
+            if (!draggedElement) return;
+
+            const touch = e.type === 'touchend' ? e.changedTouches[0] : e;
+            checkDrop(touch.clientX, touch.clientY);
+
+            draggedElement.classList.remove('dragging');
+            draggedElement = null;
+
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchend', stopDrag);
+        }
+
+        function checkDrop(x, y) {
+            const dropZones = document.querySelectorAll('.drop-zone:not(.filled)');
+            const number = parseInt(draggedElement.dataset.number);
+
+            for (let zone of dropZones) {
+                const rect = zone.getBoundingClientRect();
+                if (x >= rect.left && x <= rect.right &&
+                    y >= rect.top && y <= rect.bottom) {
+
+                    const zoneNumber = parseInt(zone.dataset.number);
+                    if (number === zoneNumber) {
+                        // Correct placement
+                        placeNumber(zone, number);
+                        correctPlacements++;
+                        document.getElementById('score').textContent = correctPlacements;
+
+                        if (correctPlacements === totalNumbers) {
+                            setTimeout(showCompletion, 500);
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+
+        function placeNumber(zone, number) {
+            // Remove draggable element
+            draggedElement.remove();
+
+            // Add placed number
+            const tickContainer = document.getElementById('tick-container');
+            const placedNumber = document.createElement('div');
+            placedNumber.className = 'placed-number';
+            placedNumber.textContent = number;
+            placedNumber.style.left = zone.style.left;
+            placedNumber.style.bottom = '20px';
+            placedNumber.style.transform = 'translateX(-50%)';
+            tickContainer.appendChild(placedNumber);
+
+            // Mark zone as filled and correct
+            zone.classList.add('filled', 'correct');
+        }
+
+        function showCompletion() {
+            document.querySelector('.game-area').style.display = 'none';
+            document.getElementById('completion-screen').style.display = 'block';
+        }
+
+        function restart() {
+            correctPlacements = 0;
+            document.getElementById('score').textContent = '0';
+            document.querySelector('.game-area').style.display = 'block';
+            document.getElementById('completion-screen').style.display = 'none';
+            initGame();
+        }
+
+        // Start game
+        initGame();
+    </script>
+</body>
+</html>

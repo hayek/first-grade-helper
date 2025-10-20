@@ -4,7 +4,7 @@ let currentRound = 0;
 let correctAnswers = 0;
 let lastValue = null;
 
-// Arabic letters from أ to ف with emojis
+// Arabic letters from أ to ي with emojis
 const arabicLetters = [
     { letter: 'أ', words: [{text: 'أسد', emoji: '🦁'}, {text: 'أرنب', emoji: '🐰'}, {text: 'أنف', emoji: '👃'}] },
     { letter: 'ب', words: [{text: 'بطة', emoji: '🦆'}, {text: 'بيت', emoji: '🏠'}, {text: 'باب', emoji: '🚪'}] },
@@ -25,7 +25,15 @@ const arabicLetters = [
     { letter: 'ظ', words: [{text: 'ظرف', emoji: '✉️'}, {text: 'ظل', emoji: '🌑'}, {text: 'ظفر', emoji: '💅'}] },
     { letter: 'ع', words: [{text: 'عصفور', emoji: '🐦'}, {text: 'عنب', emoji: '🍇'}, {text: 'عين', emoji: '👁️'}] },
     { letter: 'غ', words: [{text: 'غراب', emoji: '🐦‍⬛'}, {text: 'غزال', emoji: '🦌'}, {text: 'غيمة', emoji: '☁️'}] },
-    { letter: 'ف', words: [{text: 'فراشة', emoji: '🦋'}, {text: 'فيل', emoji: '🐘'}, {text: 'فم', emoji: '👄'}] }
+    { letter: 'ف', words: [{text: 'فراشة', emoji: '🦋'}, {text: 'فيل', emoji: '🐘'}, {text: 'فم', emoji: '👄'}] },
+    { letter: 'ق', words: [{text: 'قطة', emoji: '🐱'}, {text: 'قمر', emoji: '🌙'}, {text: 'قلب', emoji: '❤️'}] },
+    { letter: 'ك', words: [{text: 'كلب', emoji: '🐕'}, {text: 'كتاب', emoji: '📖'}, {text: 'كرة', emoji: '⚽'}] },
+    { letter: 'ل', words: [{text: 'ليمون', emoji: '🍋'}, {text: 'لبن', emoji: '🥛'}, {text: 'ليل', emoji: '🌙'}] },
+    { letter: 'م', words: [{text: 'موز', emoji: '🍌'}, {text: 'ماء', emoji: '💧'}, {text: 'مفتاح', emoji: '🔑'}] },
+    { letter: 'ن', words: [{text: 'نمر', emoji: '🐯'}, {text: 'نجمة', emoji: '⭐'}, {text: 'نار', emoji: '🔥'}] },
+    { letter: 'ه', words: [{text: 'هدية', emoji: '🎁'}, {text: 'هلال', emoji: '🌙'}, {text: 'هرة', emoji: '🐱'}] },
+    { letter: 'و', words: [{text: 'وردة', emoji: '🌹'}, {text: 'وحش', emoji: '👹'}, {text: 'وجه', emoji: '😊'}] },
+    { letter: 'ي', words: [{text: 'يد', emoji: '🖐️'}, {text: 'يمامة', emoji: '🕊️'}, {text: 'يخت', emoji: '⛵'}] }
 ];
 
 // Utility functions

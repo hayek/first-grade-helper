@@ -188,6 +188,7 @@ h2 {
     align-items: center;
     justify-content: center;
     gap: 20px;
+    direction: ltr;
 }
 
 .blank {

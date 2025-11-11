@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة الجمع</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <button class="back-btn" onclick="window.location.href='index.html'">← العودة</button>
+            <div class="progress">الجولة <span id="round">1</span> من 50</div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="game-content" id="game-screen">
+            <div class="question-display" id="question"></div>
+            <div class="options-grid" id="options"></div>
+        </div>
+
+        <div class="completion-content" id="completion-screen" style="display: none;">
+            <div class="completion-emoji">🎉</div>
+            <h2>أحسنت!</h2>
+            <p class="score">النتيجة: <span id="final-score"></span> من 50</p>
+            <button class="btn-primary" onclick="restart()">إعادة اللعبة</button>
+            <button class="btn-secondary" onclick="window.location.href='index.html'">العودة للقائمة</button>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let currentRound = 0;
+        let correctAnswers = 0;
+        let currentQuestion = null;
+
+        function generateQuestion() {
+            // Generate two numbers where their sum is at most 10
+            const maxSum = 10;
+            const num1 = getRandomInt(0, maxSum);
+            const num2 = getRandomInt(0, maxSum - num1); // Ensure sum doesn't exceed 10
+            const sum = num1 + num2;
+
+            // Randomly choose which position to hide (0 = first number, 1 = second number, 2 = sum)
+            const hidePosition = getRandomInt(0, 2);
+
+            let questionText = '';
+            let correctAnswer = 0;
+
+            if (hidePosition === 0) {
+                // Hide first number: _ + num2 = sum
+                questionText = `_ + ${num2} = ${sum}`;
+                correctAnswer = num1;
+            } else if (hidePosition === 1) {
+                // Hide second number: num1 + _ = sum
+                questionText = `${num1} + _ = ${sum}`;
+                correctAnswer = num2;
+            } else {
+                // Hide sum: num1 + num2 = _
+                questionText = `${num1} + ${num2} = _`;
+                correctAnswer = sum;
+            }
+
+            return {
+                questionText,
+                correctAnswer,
+                hidePosition
+            };
+        }
+
+        function generateOptions(correctAnswer) {
+            const options = [correctAnswer];
+
+            // Generate 3 wrong answers
+            while (options.length < 4) {
+                let wrongAnswer = getRandomInt(0, 10);
+                if (!options.includes(wrongAnswer)) {
+                    options.push(wrongAnswer);
+                }
+            }
+
+            // Shuffle options
+            for (let i = options.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [options[i], options[j]] = [options[j], options[i]];
+            }
+
+            return options;
+        }
+
+        function displayQuestion() {
+            currentQuestion = generateQuestion();
+            document.getElementById('question').textContent = currentQuestion.questionText;
+
+            const options = generateOptions(currentQuestion.correctAnswer);
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+
+            options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.onclick = () => checkAnswer(option, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedAnswer, button) {
+            const allButtons = document.querySelectorAll('.option-btn');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            if (selectedAnswer === currentQuestion.correctAnswer) {
+                button.classList.add('correct');
+                correctAnswers++;
+                setTimeout(nextRound, 800);
+            } else {
+                button.classList.add('wrong');
+                // Show correct answer
+                allButtons.forEach(btn => {
+                    if (parseInt(btn.textContent) === currentQuestion.correctAnswer) {
+                        btn.classList.add('correct');
+                    }
+                });
+                setTimeout(nextRound, 1500);
+            }
+        }
+
+        function nextRound() {
+            if (currentRound >= 50) {
+                showCompletion();
+                return;
+            }
+
+            currentRound++;
+            document.getElementById('round').textContent = currentRound;
+            updateProgressBar('progress', currentRound, 50);
+
+            displayQuestion();
+        }
+
+        function showCompletion() {
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('completion-screen').style.display = 'block';
+            document.getElementById('final-score').textContent = correctAnswers;
+        }
+
+        function restart() {
+            currentRound = 0;
+            correctAnswers = 0;
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('completion-screen').style.display = 'none';
+            nextRound();
+        }
+
+        // Start the game
+        nextRound();
+    </script>
+</body>
+</html>
